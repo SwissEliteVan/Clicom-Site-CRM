@@ -1,0 +1,8 @@
+<svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="480" rx="32" fill="#EEF1FF" />
+  <path d="M80 320 C200 200, 360 240, 480 160 C600 80, 720 120, 760 200" stroke="#3366FF" stroke-width="6" fill="none" stroke-linecap="round" />
+  <circle cx="160" cy="160" r="8" fill="#3366FF" />
+  <circle cx="320" cy="120" r="8" fill="#3366FF" />
+  <circle cx="520" cy="200" r="8" fill="#3366FF" />
+  <text x="80" y="420" font-family="Arial, sans-serif" font-size="24" fill="#1A1A2E">CLICOM – Tech Abstract Placeholder</text>
+</svg>
