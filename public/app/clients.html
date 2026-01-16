@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clients - CLICOM CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/app/assets/dashboard.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">CLICOM</div>
+
+      <nav class="sidebar-nav">
+        <a href="/app/index.html" class="sidebar-nav-item">
+          📊 Dashboard
+        </a>
+        <a href="/app/clients.html" class="sidebar-nav-item active">
+          👥 Clients
+        </a>
+        <a href="/app/invoices.html" class="sidebar-nav-item">
+          📄 Factures
+        </a>
+        <a href="/app/projects.html" class="sidebar-nav-item">
+          🚀 Projets
+        </a>
+        <a href="/app/tasks.html" class="sidebar-nav-item">
+          ✅ Tâches
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <div>
+            <div style="font-weight: 500;">Admin</div>
+            <button id="logout-btn" class="btn-secondary btn-sm mt-1">Déconnexion</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Gestion des clients</h1>
+          <p class="page-subtitle">Liste de tous vos clients et prospects</p>
+        </div>
+        <button class="btn btn-primary">+ Nouveau client</button>
+      </div>
+
+      <!-- Messages -->
+      <div id="error-message" class="alert alert-error"></div>
+      <div id="success-message" class="alert alert-success"></div>
+
+      <!-- Filters -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="flex gap-3">
+            <input
+              type="text"
+              id="search-input"
+              class="form-input"
+              placeholder="Rechercher un client..."
+              style="max-width: 300px;"
+            />
+            <select id="status-filter" class="form-select" style="max-width: 200px;">
+              <option value="">Tous les statuts</option>
+              <option value="lead">Prospect</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clients Table -->
+      <div class="card">
+        <div class="card-body">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Email</th>
+                  <th>Entreprise</th>
+                  <th>Téléphone</th>
+                  <th>Statut</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table">
+                <tr>
+                  <td colspan="7" class="text-center" style="padding: 2rem; color: var(--color-text-muted);">
+                    Chargement des clients...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/app/js/config.js"></script>
+  <script src="/app/js/apiClient.js"></script>
+  <script>
+    // Vérifier l'authentification
+    (async function() {
+      try {
+        await apiClient.init();
+
+        if (!apiClient.isAuthenticated) {
+          window.location.href = '/app/login.html';
+          return;
+        }
+
+        loadClients();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        window.location.href = '/app/login.html';
+      }
+    })();
+
+    // Déconnexion
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        await apiClient.logout();
+        window.location.href = '/app/login.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    });
+
+    // Charger les clients
+    async function loadClients() {
+      const tableBody = document.getElementById('clients-table');
+
+      try {
+        // Pour l'instant, afficher un message de démonstration
+        // L'endpoint /clients.php devra être créé dans le backend
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center" style="padding: 2rem;">
+              <div style="color: var(--color-text-muted);">
+                📋 Page Clients en développement<br />
+                <small>L'endpoint API pour récupérer les clients doit être créé dans le backend.</small><br />
+                <small style="margin-top: 1rem; display: block;">Les clients saisis via le formulaire de contact sont déjà enregistrés dans la base de données.</small>
+              </div>
+            </td>
+          </tr>
+        `;
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center" style="padding: 2rem; color: var(--color-danger);">
+              Erreur lors du chargement des clients
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // Recherche
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      // Implémenter la recherche client
+      console.log('Searching:', e.target.value);
+    });
+
+    // Filtre par statut
+    document.getElementById('status-filter').addEventListener('change', (e) => {
+      // Implémenter le filtre
+      console.log('Filter by status:', e.target.value);
+    });
+  </script>
+</body>
+</html>
