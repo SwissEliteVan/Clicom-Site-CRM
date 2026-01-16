@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connexion - CLICOM CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/app/assets/dashboard.css" />
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">CLICOM</div>
+      <h1 class="login-title">Connexion au CRM</h1>
+
+      <!-- Messages d'alerte -->
+      <div id="error-message" class="alert alert-error"></div>
+      <div id="success-message" class="alert alert-success"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email" class="form-label">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input"
+            placeholder="admin@clicom.ch"
+            required
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Mot de passe</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            placeholder="••••••••"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+          Se connecter
+        </button>
+      </form>
+
+      <p class="text-center mt-4" style="font-size: 0.85rem; color: var(--color-text-muted);">
+        Identifiants par défaut :<br />
+        admin@clicom.ch / clicom2024
+      </p>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/app/js/config.js"></script>
+  <script src="/app/js/apiClient.js"></script>
+  <script>
+    // Initialiser le client API
+    (async function() {
+      try {
+        await apiClient.init();
+
+        // Si déjà authentifié, rediriger vers le dashboard
+        if (apiClient.isAuthenticated) {
+          window.location.href = '/app/index.html';
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+      }
+    })();
+
+    // Gérer la soumission du formulaire
+    const loginForm = document.getElementById('login-form');
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await apiClient.login(email, password);
+
+        if (response.status === 'authenticated') {
+          apiClient.showSuccess('Connexion réussie ! Redirection...');
+          setTimeout(() => {
+            window.location.href = '/app/index.html';
+          }, 1000);
+        }
+      } catch (error) {
+        // L'erreur est déjà gérée par apiClient.handleHttpError()
+        console.error('Login failed:', error);
+      }
+    });
+  </script>
+</body>
+</html>
