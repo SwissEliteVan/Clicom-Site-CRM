@@ -6,6 +6,104 @@
   <title>Tâches - CLICOM CRM</title>
   <meta name="robots" content="noindex, nofollow" />
   <link rel="stylesheet" href="/app/assets/dashboard.css" />
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      animation: fadeIn 0.2s;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: var(--color-bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s;
+    }
+
+    .modal-header {
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all var(--transition-fast);
+    }
+
+    .modal-close:hover {
+      background-color: var(--color-bg-hover);
+      color: var(--color-text-primary);
+    }
+
+    .modal-body {
+      padding: var(--spacing-lg);
+    }
+
+    .modal-footer {
+      padding: var(--spacing-lg);
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      gap: var(--spacing-sm);
+      justify-content: flex-end;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .btn-icon {
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+
+    .task-status-done { text-decoration: line-through; opacity: 0.7; }
+  </style>
 </head>
 <body>
   <div class="dashboard-layout">
@@ -33,34 +131,341 @@
       <div class="page-header">
         <div>
           <h1 class="page-title">Gestion des tâches</h1>
-          <p class="page-subtitle">Organisez vos tâches et suivis client</p>
+          <p class="page-subtitle">Organisez et suivez vos tâches</p>
         </div>
-        <button class="btn btn-primary">+ Nouvelle tâche</button>
+        <button id="btn-new-task" class="btn btn-primary">+ Nouvelle tâche</button>
+      </div>
+
+      <div id="error-message" class="alert alert-error"></div>
+      <div id="success-message" class="alert alert-success"></div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="flex gap-3">
+            <select id="status-filter" class="form-select" style="max-width: 200px;">
+              <option value="">Tous les statuts</option>
+              <option value="todo">À faire</option>
+              <option value="in_progress">En cours</option>
+              <option value="done">Terminé</option>
+            </select>
+            <select id="priority-filter" class="form-select" style="max-width: 200px;">
+              <option value="">Toutes les priorités</option>
+              <option value="high">Haute</option>
+              <option value="medium">Moyenne</option>
+              <option value="low">Basse</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="card">
-        <div class="card-body text-center" style="padding: 3rem;">
-          <h2 style="font-size: 3rem; margin-bottom: 1rem;">🚧</h2>
-          <h3 style="margin-bottom: 1rem;">Page en construction</h3>
-          <p style="color: var(--color-text-secondary);">
-            La gestion des tâches sera disponible prochainement.
-          </p>
+        <div class="card-body">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Tâche</th>
+                  <th>Client</th>
+                  <th>Projet</th>
+                  <th>Statut</th>
+                  <th>Priorité</th>
+                  <th>Échéance</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tasks-table">
+                <tr>
+                  <td colspan="7" class="text-center" style="padding: 2rem;">
+                    Chargement...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </main>
   </div>
 
+  <div id="task-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Nouvelle tâche</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="task-form">
+        <div class="modal-body">
+          <input type="hidden" id="task-id" />
+
+          <div class="form-group">
+            <label for="title" class="form-label">Titre *</label>
+            <input type="text" id="title" class="form-input" required />
+          </div>
+
+          <div class="form-group">
+            <label for="description" class="form-label">Description</label>
+            <textarea id="description" class="form-textarea" rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="client-id-select" class="form-label">Client</label>
+            <select id="client-id-select" class="form-select">
+              <option value="">Aucun client</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="project-id-select" class="form-label">Projet</label>
+            <select id="project-id-select" class="form-select">
+              <option value="">Aucun projet</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="status-select" class="form-label">Statut</label>
+            <select id="status-select" class="form-select">
+              <option value="todo">À faire</option>
+              <option value="in_progress">En cours</option>
+              <option value="done">Terminé</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="priority-select" class="form-label">Priorité</label>
+            <select id="priority-select" class="form-select">
+              <option value="low">Basse</option>
+              <option value="medium" selected>Moyenne</option>
+              <option value="high">Haute</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="due-at" class="form-label">Échéance</label>
+            <input type="date" id="due-at" class="form-input" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/app/js/config.js"></script>
   <script src="/app/js/apiClient.js"></script>
   <script>
+    let currentFilters = { status: '', priority: '' };
+    let clientsCache = [];
+    let projectsCache = [];
+
     (async function() {
-      await apiClient.init();
-      if (!apiClient.isAuthenticated) window.location.href = '/app/login.html';
+      try {
+        await apiClient.init();
+        if (!apiClient.isAuthenticated) {
+          window.location.href = '/app/login.html';
+          return;
+        }
+        await loadClientsAndProjects();
+        loadTasks();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        window.location.href = '/app/login.html';
+      }
     })();
+
     document.getElementById('logout-btn').addEventListener('click', async () => {
       await apiClient.logout();
       window.location.href = '/app/login.html';
     });
+
+    async function loadClientsAndProjects() {
+      try {
+        const [clientsResponse, projectsResponse] = await Promise.all([
+          apiClient.getClients({ limit: 100 }),
+          apiClient.getProjects({ limit: 100 })
+        ]);
+
+        clientsCache = clientsResponse.clients || [];
+        projectsCache = projectsResponse.projects || [];
+
+        const clientSelect = document.getElementById('client-id-select');
+        clientSelect.innerHTML = '<option value="">Aucun client</option>' +
+          clientsCache.map(c => `<option value="${c.id}">${escapeHtml(c.contact_name)} ${c.company_name ? '(' + escapeHtml(c.company_name) + ')' : ''}</option>`).join('');
+
+        const projectSelect = document.getElementById('project-id-select');
+        projectSelect.innerHTML = '<option value="">Aucun projet</option>' +
+          projectsCache.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+      } catch (error) {
+        console.error('Failed to load clients/projects:', error);
+      }
+    }
+
+    async function loadTasks() {
+      const tableBody = document.getElementById('tasks-table');
+
+      try {
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 2rem;">Chargement...</td></tr>';
+
+        const response = await apiClient.getTasks(currentFilters);
+        const tasks = response.tasks || [];
+
+        if (tasks.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 2rem; color: var(--color-text-muted);">Aucune tâche trouvée</td></tr>';
+          return;
+        }
+
+        tableBody.innerHTML = tasks.map(task => `
+          <tr class="task-status-${task.status}">
+            <td>
+              <strong>${escapeHtml(task.title)}</strong>
+              ${task.description ? `<br><small style="color: var(--color-text-muted);">${escapeHtml(task.description).substring(0, 60)}${task.description.length > 60 ? '...' : ''}</small>` : ''}
+            </td>
+            <td>${task.client_name ? escapeHtml(task.client_name) : '-'}</td>
+            <td>${task.project_name ? escapeHtml(task.project_name) : '-'}</td>
+            <td><span class="badge badge-${getStatusBadge(task.status)}">${getStatusLabel(task.status)}</span></td>
+            <td><span class="badge badge-${getPriorityBadge(task.priority)}">${getPriorityLabel(task.priority)}</span></td>
+            <td>${task.due_at ? formatDate(task.due_at) : '-'}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-sm btn-secondary btn-icon" onclick="editTask(${task.id})" title="Modifier">✏️</button>
+                ${task.status !== 'done' ? `<button class="btn btn-sm btn-success btn-icon" onclick="markAsDone(${task.id})" title="Marquer comme terminé">✓</button>` : ''}
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteTask(${task.id}, '${escapeHtml(task.title)}')" title="Supprimer">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load tasks:', error);
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 2rem; color: var(--color-danger);">Erreur lors du chargement</td></tr>';
+      }
+    }
+
+    document.getElementById('status-filter').addEventListener('change', (e) => {
+      currentFilters.status = e.target.value;
+      loadTasks();
+    });
+
+    document.getElementById('priority-filter').addEventListener('change', (e) => {
+      currentFilters.priority = e.target.value;
+      loadTasks();
+    });
+
+    document.getElementById('btn-new-task').addEventListener('click', () => {
+      document.getElementById('modal-title').textContent = 'Nouvelle tâche';
+      document.getElementById('task-form').reset();
+      document.getElementById('task-id').value = '';
+      document.getElementById('task-modal').classList.add('active');
+    });
+
+    async function editTask(id) {
+      try {
+        const response = await apiClient.getTask(id);
+        const task = response.task;
+
+        document.getElementById('modal-title').textContent = 'Modifier la tâche';
+        document.getElementById('task-id').value = task.id;
+        document.getElementById('title').value = task.title;
+        document.getElementById('description').value = task.description || '';
+        document.getElementById('client-id-select').value = task.client_id || '';
+        document.getElementById('project-id-select').value = task.project_id || '';
+        document.getElementById('status-select').value = task.status;
+        document.getElementById('priority-select').value = task.priority;
+        document.getElementById('due-at').value = task.due_at || '';
+
+        document.getElementById('task-modal').classList.add('active');
+      } catch (error) {
+        console.error('Failed to load task:', error);
+      }
+    }
+
+    async function markAsDone(id) {
+      try {
+        await apiClient.updateTask(id, { status: 'done' });
+        apiClient.showSuccess('Tâche marquée comme terminée');
+        loadTasks();
+      } catch (error) {
+        console.error('Failed to update task:', error);
+      }
+    }
+
+    async function deleteTask(id, title) {
+      if (!confirm(`Supprimer la tâche "${title}" ?`)) return;
+
+      try {
+        await apiClient.deleteTask(id);
+        apiClient.showSuccess('Tâche supprimée');
+        loadTasks();
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('task-modal').classList.remove('active');
+    }
+
+    document.getElementById('task-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById('task-id').value;
+      const taskData = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value || null,
+        client_id: document.getElementById('client-id-select').value || null,
+        project_id: document.getElementById('project-id-select').value || null,
+        status: document.getElementById('status-select').value,
+        priority: document.getElementById('priority-select').value,
+        due_at: document.getElementById('due-at').value || null,
+      };
+
+      try {
+        if (id) {
+          await apiClient.updateTask(parseInt(id), taskData);
+          apiClient.showSuccess('Tâche mise à jour');
+        } else {
+          await apiClient.createTask(taskData);
+          apiClient.showSuccess('Tâche créée');
+        }
+        closeModal();
+        loadTasks();
+      } catch (error) {
+        console.error('Failed to save task:', error);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      return new Intl.DateTimeFormat('fr-CH').format(new Date(dateString));
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function getStatusBadge(status) {
+      return { 'todo': 'info', 'in_progress': 'warning', 'done': 'success' }[status] || 'info';
+    }
+
+    function getStatusLabel(status) {
+      return { 'todo': 'À faire', 'in_progress': 'En cours', 'done': 'Terminé' }[status] || status;
+    }
+
+    function getPriorityBadge(priority) {
+      return { 'high': 'danger', 'medium': 'warning', 'low': 'info' }[priority] || 'info';
+    }
+
+    function getPriorityLabel(priority) {
+      return { 'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse' }[priority] || priority;
+    }
   </script>
 </body>
 </html>
