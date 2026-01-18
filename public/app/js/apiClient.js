@@ -54,6 +54,32 @@ class ApiClient {
   }
 
   /**
+   * Effectue une requête PUT
+   * @param {string} endpoint - Endpoint de l'API
+   * @param {Object} data - Données à envoyer
+   * @returns {Promise<Object>} - Réponse JSON
+   */
+  async put(endpoint, data = {}) {
+    return this.request(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Effectue une requête DELETE
+   * @param {string} endpoint - Endpoint de l'API
+   * @param {Object} data - Données à envoyer
+   * @returns {Promise<Object>} - Réponse JSON
+   */
+  async delete(endpoint, data = {}) {
+    return this.request(endpoint, {
+      method: 'DELETE',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
    * Requête générique avec gestion des erreurs
    * @param {string} endpoint - Endpoint de l'API
    * @param {Object} options - Options fetch
@@ -70,8 +96,8 @@ class ApiClient {
       },
     };
 
-    // Ajouter le CSRF token pour les requêtes POST
-    if (options.method === 'POST' && this.csrfToken) {
+    // Ajouter le CSRF token pour les requêtes POST, PUT, DELETE
+    if (['POST', 'PUT', 'DELETE'].includes(options.method) && this.csrfToken) {
       defaultOptions.headers[CONFIG.SECURITY.CSRF_HEADER] = this.csrfToken;
     }
 
@@ -252,6 +278,212 @@ class ApiClient {
    */
   async submitContact(formData) {
     return this.post(CONFIG.API_ENDPOINTS.CONTACT, formData);
+  }
+
+  // ========== DASHBOARD ==========
+
+  /**
+   * Récupère les statistiques du dashboard
+   * @returns {Promise<Object>} - Stats du dashboard
+   */
+  async getDashboardStats() {
+    return this.get('/dashboard.php');
+  }
+
+  // ========== CLIENTS ==========
+
+  /**
+   * Récupère la liste des clients
+   * @param {Object} filters - Filtres (status, search, limit, offset)
+   * @returns {Promise<Object>} - Liste des clients
+   */
+  async getClients(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.get(`/clients.php?${params}`);
+  }
+
+  /**
+   * Récupère un client spécifique
+   * @param {number} id - ID du client
+   * @returns {Promise<Object>} - Client
+   */
+  async getClient(id) {
+    return this.get(`/clients.php?id=${id}`);
+  }
+
+  /**
+   * Crée un nouveau client
+   * @param {Object} clientData - Données du client
+   * @returns {Promise<Object>} - Client créé
+   */
+  async createClient(clientData) {
+    return this.post('/clients.php', clientData);
+  }
+
+  /**
+   * Met à jour un client
+   * @param {number} id - ID du client
+   * @param {Object} clientData - Données à mettre à jour
+   * @returns {Promise<Object>} - Client mis à jour
+   */
+  async updateClient(id, clientData) {
+    return this.put('/clients.php', { id, ...clientData });
+  }
+
+  /**
+   * Supprime un client
+   * @param {number} id - ID du client
+   * @returns {Promise<Object>} - Confirmation
+   */
+  async deleteClient(id) {
+    return this.delete('/clients.php', { id });
+  }
+
+  // ========== INVOICES ==========
+
+  /**
+   * Récupère la liste des factures
+   * @param {Object} filters - Filtres (status, limit, offset)
+   * @returns {Promise<Object>} - Liste des factures
+   */
+  async getInvoices(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.get(`/invoices.php?${params}`);
+  }
+
+  /**
+   * Récupère une facture spécifique
+   * @param {number} id - ID de la facture
+   * @returns {Promise<Object>} - Facture
+   */
+  async getInvoice(id) {
+    return this.get(`/invoices.php?id=${id}`);
+  }
+
+  /**
+   * Crée une nouvelle facture
+   * @param {Object} invoiceData - Données de la facture
+   * @returns {Promise<Object>} - Facture créée
+   */
+  async createInvoice(invoiceData) {
+    return this.post('/invoices.php', invoiceData);
+  }
+
+  /**
+   * Met à jour une facture
+   * @param {number} id - ID de la facture
+   * @param {Object} invoiceData - Données à mettre à jour
+   * @returns {Promise<Object>} - Facture mise à jour
+   */
+  async updateInvoice(id, invoiceData) {
+    return this.put('/invoices.php', { id, ...invoiceData });
+  }
+
+  /**
+   * Supprime une facture
+   * @param {number} id - ID de la facture
+   * @returns {Promise<Object>} - Confirmation
+   */
+  async deleteInvoice(id) {
+    return this.delete('/invoices.php', { id });
+  }
+
+  // ========== PROJECTS ==========
+
+  /**
+   * Récupère la liste des projets
+   * @param {Object} filters - Filtres (status, client_id, limit, offset)
+   * @returns {Promise<Object>} - Liste des projets
+   */
+  async getProjects(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.get(`/projects.php?${params}`);
+  }
+
+  /**
+   * Récupère un projet spécifique
+   * @param {number} id - ID du projet
+   * @returns {Promise<Object>} - Projet
+   */
+  async getProject(id) {
+    return this.get(`/projects.php?id=${id}`);
+  }
+
+  /**
+   * Crée un nouveau projet
+   * @param {Object} projectData - Données du projet
+   * @returns {Promise<Object>} - Projet créé
+   */
+  async createProject(projectData) {
+    return this.post('/projects.php', projectData);
+  }
+
+  /**
+   * Met à jour un projet
+   * @param {number} id - ID du projet
+   * @param {Object} projectData - Données à mettre à jour
+   * @returns {Promise<Object>} - Projet mis à jour
+   */
+  async updateProject(id, projectData) {
+    return this.put('/projects.php', { id, ...projectData });
+  }
+
+  /**
+   * Supprime un projet
+   * @param {number} id - ID du projet
+   * @returns {Promise<Object>} - Confirmation
+   */
+  async deleteProject(id) {
+    return this.delete('/projects.php', { id });
+  }
+
+  // ========== TASKS ==========
+
+  /**
+   * Récupère la liste des tâches
+   * @param {Object} filters - Filtres (status, priority, project_id, client_id, limit, offset)
+   * @returns {Promise<Object>} - Liste des tâches
+   */
+  async getTasks(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.get(`/tasks.php?${params}`);
+  }
+
+  /**
+   * Récupère une tâche spécifique
+   * @param {number} id - ID de la tâche
+   * @returns {Promise<Object>} - Tâche
+   */
+  async getTask(id) {
+    return this.get(`/tasks.php?id=${id}`);
+  }
+
+  /**
+   * Crée une nouvelle tâche
+   * @param {Object} taskData - Données de la tâche
+   * @returns {Promise<Object>} - Tâche créée
+   */
+  async createTask(taskData) {
+    return this.post('/tasks.php', taskData);
+  }
+
+  /**
+   * Met à jour une tâche
+   * @param {number} id - ID de la tâche
+   * @param {Object} taskData - Données à mettre à jour
+   * @returns {Promise<Object>} - Tâche mise à jour
+   */
+  async updateTask(id, taskData) {
+    return this.put('/tasks.php', { id, ...taskData });
+  }
+
+  /**
+   * Supprime une tâche
+   * @param {number} id - ID de la tâche
+   * @returns {Promise<Object>} - Confirmation
+   */
+  async deleteTask(id) {
+    return this.delete('/tasks.php', { id });
   }
 }
 
