@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Projets - CLICOM CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/app/assets/dashboard.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">CLICOM</div>
+      <nav class="sidebar-nav">
+        <a href="/app/index.html" class="sidebar-nav-item">📊 Dashboard</a>
+        <a href="/app/clients.html" class="sidebar-nav-item">👥 Clients</a>
+        <a href="/app/invoices.html" class="sidebar-nav-item">📄 Factures</a>
+        <a href="/app/projects.html" class="sidebar-nav-item active">🚀 Projets</a>
+        <a href="/app/tasks.html" class="sidebar-nav-item">✅ Tâches</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <div>
+            <div style="font-weight: 500;">Admin</div>
+            <button id="logout-btn" class="btn-secondary btn-sm mt-1">Déconnexion</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Gestion des projets</h1>
+          <p class="page-subtitle">Suivez l'avancement de vos projets</p>
+        </div>
+        <button class="btn btn-primary">+ Nouveau projet</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center" style="padding: 3rem;">
+          <h2 style="font-size: 3rem; margin-bottom: 1rem;">🚧</h2>
+          <h3 style="margin-bottom: 1rem;">Page en construction</h3>
+          <p style="color: var(--color-text-secondary);">
+            La gestion des projets sera disponible prochainement.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/app/js/config.js"></script>
+  <script src="/app/js/apiClient.js"></script>
+  <script>
+    (async function() {
+      await apiClient.init();
+      if (!apiClient.isAuthenticated) window.location.href = '/app/login.html';
+    })();
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await apiClient.logout();
+      window.location.href = '/app/login.html';
+    });
+  </script>
+</body>
+</html>

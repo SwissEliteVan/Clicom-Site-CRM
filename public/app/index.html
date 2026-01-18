@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - CLICOM CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/app/assets/dashboard.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">CLICOM</div>
+
+      <nav class="sidebar-nav">
+        <a href="/app/index.html" class="sidebar-nav-item active">
+          📊 Dashboard
+        </a>
+        <a href="/app/clients.html" class="sidebar-nav-item">
+          👥 Clients
+        </a>
+        <a href="/app/invoices.html" class="sidebar-nav-item">
+          📄 Factures
+        </a>
+        <a href="/app/projects.html" class="sidebar-nav-item">
+          🚀 Projets
+        </a>
+        <a href="/app/tasks.html" class="sidebar-nav-item">
+          ✅ Tâches
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <div>
+            <div style="font-weight: 500;">Admin</div>
+            <button id="logout-btn" class="btn-secondary btn-sm mt-1">Déconnexion</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">Vue d'ensemble de votre activité</p>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div id="error-message" class="alert alert-error"></div>
+      <div id="success-message" class="alert alert-success"></div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-clients">0</div>
+          <div class="stat-label">Clients actifs</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+          <div class="stat-value" id="stat-revenue">0 CHF</div>
+          <div class="stat-label">Revenus ce mois</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+          <div class="stat-value" id="stat-pending">0</div>
+          <div class="stat-label">Factures en attente</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+          <div class="stat-value" id="stat-projects">0</div>
+          <div class="stat-label">Projets actifs</div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Activité récente</h2>
+          <a href="/app/clients.html" class="btn btn-sm btn-secondary">Voir tout</a>
+        </div>
+        <div class="card-body">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Email</th>
+                  <th>Statut</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="recent-clients">
+                <tr>
+                  <td colspan="4" class="text-center" style="color: var(--color-text-muted);">
+                    Chargement...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks Section -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h2 class="card-title">Tâches à faire</h2>
+          <a href="/app/tasks.html" class="btn btn-sm btn-primary">+ Nouvelle tâche</a>
+        </div>
+        <div class="card-body">
+          <div id="tasks-list">
+            <p style="color: var(--color-text-muted);">Aucune tâche pour le moment</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/app/js/config.js"></script>
+  <script src="/app/js/apiClient.js"></script>
+  <script>
+    // Vérifier l'authentification
+    (async function() {
+      try {
+        await apiClient.init();
+
+        if (!apiClient.isAuthenticated) {
+          window.location.href = '/app/login.html';
+          return;
+        }
+
+        // Charger les données du dashboard
+        loadDashboardData();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        window.location.href = '/app/login.html';
+      }
+    })();
+
+    // Déconnexion
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        await apiClient.logout();
+        window.location.href = '/app/login.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    });
+
+    // Charger les données du dashboard
+    async function loadDashboardData() {
+      try {
+        // Récupérer les stats via l'API
+        const stats = await apiClient.getDashboardStats();
+
+        // Mettre à jour les statistiques
+        document.getElementById('stat-clients').textContent = stats.clients_active || 0;
+        document.getElementById('stat-revenue').textContent = formatMoney(stats.revenue_month || 0);
+        document.getElementById('stat-pending').textContent = stats.invoices_pending || 0;
+        document.getElementById('stat-projects').textContent = stats.projects_active || 0;
+
+        // Afficher les clients récents
+        const recentClientsBody = document.getElementById('recent-clients');
+        if (stats.recent_clients && stats.recent_clients.length > 0) {
+          recentClientsBody.innerHTML = stats.recent_clients.map(client => `
+            <tr>
+              <td>
+                <strong>${escapeHtml(client.contact_name)}</strong>
+                ${client.company_name ? `<br><small style="color: var(--color-text-muted);">${escapeHtml(client.company_name)}</small>` : ''}
+              </td>
+              <td>${escapeHtml(client.email)}</td>
+              <td><span class="badge badge-${getStatusBadge(client.status)}">${getStatusLabel(client.status)}</span></td>
+              <td>${formatDate(client.created_at)}</td>
+            </tr>
+          `).join('');
+        } else {
+          recentClientsBody.innerHTML = `
+            <tr>
+              <td colspan="4" class="text-center" style="color: var(--color-text-muted); padding: 2rem;">
+                Aucun client pour le moment
+              </td>
+            </tr>
+          `;
+        }
+
+        // Afficher les tâches à faire
+        const tasksList = document.getElementById('tasks-list');
+        if (stats.tasks_todo && stats.tasks_todo.length > 0) {
+          tasksList.innerHTML = stats.tasks_todo.map(task => `
+            <div style="padding: 0.75rem; border-bottom: 1px solid var(--color-border);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>${escapeHtml(task.title)}</strong>
+                  ${task.client_name ? `<small style="color: var(--color-text-muted);"> - ${escapeHtml(task.client_name)}</small>` : ''}
+                </div>
+                <span class="badge badge-${getPriorityBadge(task.priority)}">${task.priority}</span>
+              </div>
+              ${task.due_at ? `<small style="color: var(--color-text-muted);">Échéance: ${formatDate(task.due_at)}</small>` : ''}
+            </div>
+          `).join('');
+        } else {
+          tasksList.innerHTML = '<p style="color: var(--color-text-muted);">Aucune tâche pour le moment</p>';
+        }
+
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+        apiClient.showError('Erreur lors du chargement des données');
+      }
+    }
+
+    // Fonctions utilitaires
+    function formatMoney(amount) {
+      return new Intl.NumberFormat('fr-CH', {
+        style: 'currency',
+        currency: 'CHF',
+        minimumFractionDigits: 0
+      }).format(amount);
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('fr-CH').format(date);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function getStatusBadge(status) {
+      const badges = {
+        'lead': 'info',
+        'active': 'success',
+        'inactive': 'danger'
+      };
+      return badges[status] || 'info';
+    }
+
+    function getStatusLabel(status) {
+      const labels = {
+        'lead': 'Prospect',
+        'active': 'Actif',
+        'inactive': 'Inactif'
+      };
+      return labels[status] || status;
+    }
+
+    function getPriorityBadge(priority) {
+      const badges = {
+        'high': 'danger',
+        'medium': 'warning',
+        'low': 'info'
+      };
+      return badges[priority] || 'info';
+    }
+  </script>
+</body>
+</html>

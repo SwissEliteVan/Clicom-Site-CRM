@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clients - CLICOM CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/app/assets/dashboard.css" />
+  <style>
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      animation: fadeIn 0.2s;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: var(--color-bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s;
+    }
+
+    .modal-header {
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all var(--transition-fast);
+    }
+
+    .modal-close:hover {
+      background-color: var(--color-bg-hover);
+      color: var(--color-text-primary);
+    }
+
+    .modal-body {
+      padding: var(--spacing-lg);
+    }
+
+    .modal-footer {
+      padding: var(--spacing-lg);
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      gap: var(--spacing-sm);
+      justify-content: flex-end;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .btn-icon {
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">CLICOM</div>
+
+      <nav class="sidebar-nav">
+        <a href="/app/index.html" class="sidebar-nav-item">
+          📊 Dashboard
+        </a>
+        <a href="/app/clients.html" class="sidebar-nav-item active">
+          👥 Clients
+        </a>
+        <a href="/app/invoices.html" class="sidebar-nav-item">
+          📄 Factures
+        </a>
+        <a href="/app/projects.html" class="sidebar-nav-item">
+          🚀 Projets
+        </a>
+        <a href="/app/tasks.html" class="sidebar-nav-item">
+          ✅ Tâches
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <div>
+            <div style="font-weight: 500;">Admin</div>
+            <button id="logout-btn" class="btn-secondary btn-sm mt-1">Déconnexion</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Gestion des clients</h1>
+          <p class="page-subtitle">Liste de tous vos clients et prospects</p>
+        </div>
+        <button id="btn-new-client" class="btn btn-primary">+ Nouveau client</button>
+      </div>
+
+      <!-- Messages -->
+      <div id="error-message" class="alert alert-error"></div>
+      <div id="success-message" class="alert alert-success"></div>
+
+      <!-- Filters -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="flex gap-3">
+            <input
+              type="text"
+              id="search-input"
+              class="form-input"
+              placeholder="Rechercher un client..."
+              style="max-width: 300px;"
+            />
+            <select id="status-filter" class="form-select" style="max-width: 200px;">
+              <option value="">Tous les statuts</option>
+              <option value="lead">Prospect</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clients Table -->
+      <div class="card">
+        <div class="card-body">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Email</th>
+                  <th>Entreprise</th>
+                  <th>Téléphone</th>
+                  <th>Statut</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table">
+                <tr>
+                  <td colspan="7" class="text-center" style="padding: 2rem; color: var(--color-text-muted);">
+                    Chargement des clients...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Create/Edit Client -->
+  <div id="client-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Nouveau client</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="client-form">
+        <div class="modal-body">
+          <input type="hidden" id="client-id" />
+
+          <div class="form-group">
+            <label for="contact-name" class="form-label">Nom du contact *</label>
+            <input type="text" id="contact-name" class="form-input" required />
+          </div>
+
+          <div class="form-group">
+            <label for="email" class="form-label">Email *</label>
+            <input type="email" id="email" class="form-input" required />
+          </div>
+
+          <div class="form-group">
+            <label for="company-name" class="form-label">Entreprise</label>
+            <input type="text" id="company-name" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label for="phone" class="form-label">Téléphone</label>
+            <input type="tel" id="phone" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label for="status" class="form-label">Statut</label>
+            <select id="status" class="form-select">
+              <option value="lead">Prospect</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="source" class="form-label">Source</label>
+            <input type="text" id="source" class="form-input" placeholder="Ex: Formulaire web, Référence, etc." />
+          </div>
+
+          <div class="form-group">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea id="notes" class="form-textarea" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/app/js/config.js"></script>
+  <script src="/app/js/apiClient.js"></script>
+  <script>
+    let currentFilters = { status: '', search: '' };
+
+    // Vérifier l'authentification
+    (async function() {
+      try {
+        await apiClient.init();
+
+        if (!apiClient.isAuthenticated) {
+          window.location.href = '/app/login.html';
+          return;
+        }
+
+        loadClients();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        window.location.href = '/app/login.html';
+      }
+    })();
+
+    // Déconnexion
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        await apiClient.logout();
+        window.location.href = '/app/login.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    });
+
+    // Charger les clients
+    async function loadClients() {
+      const tableBody = document.getElementById('clients-table');
+
+      try {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center" style="padding: 2rem;">
+              Chargement...
+            </td>
+          </tr>
+        `;
+
+        const response = await apiClient.getClients(currentFilters);
+        const clients = response.clients || [];
+
+        if (clients.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="7" class="text-center" style="padding: 2rem; color: var(--color-text-muted);">
+                Aucun client trouvé
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tableBody.innerHTML = clients.map(client => `
+          <tr>
+            <td>
+              <strong>${escapeHtml(client.contact_name)}</strong>
+            </td>
+            <td>${escapeHtml(client.email)}</td>
+            <td>${client.company_name ? escapeHtml(client.company_name) : '-'}</td>
+            <td>${client.phone || '-'}</td>
+            <td><span class="badge badge-${getStatusBadge(client.status)}">${getStatusLabel(client.status)}</span></td>
+            <td>${formatDate(client.created_at)}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-sm btn-secondary btn-icon" onclick="editClient(${client.id})" title="Modifier">
+                  ✏️
+                </button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteClient(${client.id}, '${escapeHtml(client.contact_name)}')" title="Supprimer">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center" style="padding: 2rem; color: var(--color-danger);">
+              Erreur lors du chargement des clients
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // Recherche
+    let searchTimeout;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentFilters.search = e.target.value;
+        loadClients();
+      }, 300);
+    });
+
+    // Filtre par statut
+    document.getElementById('status-filter').addEventListener('change', (e) => {
+      currentFilters.status = e.target.value;
+      loadClients();
+    });
+
+    // Ouvrir le modal pour créer un client
+    document.getElementById('btn-new-client').addEventListener('click', () => {
+      document.getElementById('modal-title').textContent = 'Nouveau client';
+      document.getElementById('client-form').reset();
+      document.getElementById('client-id').value = '';
+      document.getElementById('client-modal').classList.add('active');
+    });
+
+    // Éditer un client
+    async function editClient(id) {
+      try {
+        const response = await apiClient.getClient(id);
+        const client = response.client;
+
+        document.getElementById('modal-title').textContent = 'Modifier le client';
+        document.getElementById('client-id').value = client.id;
+        document.getElementById('contact-name').value = client.contact_name;
+        document.getElementById('email').value = client.email;
+        document.getElementById('company-name').value = client.company_name || '';
+        document.getElementById('phone').value = client.phone || '';
+        document.getElementById('status').value = client.status;
+        document.getElementById('source').value = client.source || '';
+        document.getElementById('notes').value = client.notes || '';
+
+        document.getElementById('client-modal').classList.add('active');
+      } catch (error) {
+        console.error('Failed to load client:', error);
+        apiClient.showError('Erreur lors du chargement du client');
+      }
+    }
+
+    // Supprimer un client
+    async function deleteClient(id, name) {
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer le client "${name}" ?\n\nCette action est irréversible.`)) {
+        return;
+      }
+
+      try {
+        await apiClient.deleteClient(id);
+        apiClient.showSuccess('Client supprimé avec succès');
+        loadClients();
+      } catch (error) {
+        console.error('Failed to delete client:', error);
+      }
+    }
+
+    // Fermer le modal
+    function closeModal() {
+      document.getElementById('client-modal').classList.remove('active');
+    }
+
+    // Soumettre le formulaire
+    document.getElementById('client-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById('client-id').value;
+      const clientData = {
+        contact_name: document.getElementById('contact-name').value,
+        email: document.getElementById('email').value,
+        company_name: document.getElementById('company-name').value || null,
+        phone: document.getElementById('phone').value || null,
+        status: document.getElementById('status').value,
+        source: document.getElementById('source').value || null,
+        notes: document.getElementById('notes').value || null,
+      };
+
+      try {
+        if (id) {
+          // Update
+          await apiClient.updateClient(parseInt(id), clientData);
+          apiClient.showSuccess('Client mis à jour avec succès');
+        } else {
+          // Create
+          await apiClient.createClient(clientData);
+          apiClient.showSuccess('Client créé avec succès');
+        }
+
+        closeModal();
+        loadClients();
+      } catch (error) {
+        console.error('Failed to save client:', error);
+      }
+    });
+
+    // Fermer le modal avec Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    // Fonctions utilitaires
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('fr-CH').format(date);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function getStatusBadge(status) {
+      const badges = {
+        'lead': 'info',
+        'active': 'success',
+        'inactive': 'danger'
+      };
+      return badges[status] || 'info';
+    }
+
+    function getStatusLabel(status) {
+      const labels = {
+        'lead': 'Prospect',
+        'active': 'Actif',
+        'inactive': 'Inactif'
+      };
+      return labels[status] || status;
+    }
+  </script>
+</body>
+</html>
