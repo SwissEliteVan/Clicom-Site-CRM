@@ -17,6 +17,7 @@ const CONFIG = {
   API_ENDPOINTS: {
     AUTH: '/auth.php',
     CONTACT: '/contact.php',
+    DASHBOARD: '/dashboard.php',
     CLIENTS: '/clients.php',
     INVOICES: '/invoices.php',
     PROJECTS: '/projects.php',
